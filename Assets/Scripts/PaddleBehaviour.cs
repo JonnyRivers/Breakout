@@ -4,9 +4,12 @@ using UnityEngine;
 
 public class PaddleBehaviour : MonoBehaviour
 {
-    private const float MovementSpeed = 2.5f;
+    private const float PaddleMovementSpeed = 3.0f;
+    private const float BulletLaunchForce = 20f;
+    private const float PaddleSkewMaxForce = 10f;
 
     private BulletBehaviour m_bulletBehaviour;
+    private Rigidbody m_bulletRigidbody;
 
     public GameObject Bullet;
 
@@ -14,6 +17,7 @@ public class PaddleBehaviour : MonoBehaviour
     void Start()
     {
         m_bulletBehaviour = Bullet.GetComponent<BulletBehaviour>();
+        m_bulletRigidbody = Bullet.GetComponent<Rigidbody>();
     }
 
     // Update is called once per frame
@@ -28,6 +32,8 @@ public class PaddleBehaviour : MonoBehaviour
                 transform.position.y,
                 transform.position.z + 0.1f// TODO - derive size of bat
             );
+
+            m_bulletRigidbody.velocity = new Vector3(0, 0, 0);
             m_bulletBehaviour.IsStuck = true;
         }
 
@@ -38,21 +44,21 @@ public class PaddleBehaviour : MonoBehaviour
         float changeInX = 0;
         if (moveLeft && !moveRight)
         {
-            changeInX = Time.deltaTime * -MovementSpeed;
+            changeInX = Time.deltaTime * -PaddleMovementSpeed;
         }
         else if (moveRight && !moveLeft)
         {
-            changeInX = Time.deltaTime * MovementSpeed;
+            changeInX = Time.deltaTime * PaddleMovementSpeed;
         }
 
-        if(changeInX + transform.position.x < -3.5f)// TODO - derive size of world
+        if(changeInX + transform.position.x < -4.45f)// TODO - derive size of world
         {
-            changeInX = -3.5f - transform.position.x;// TODO - derive size of world
+            changeInX = -4.45f - transform.position.x;// TODO - derive size of world
         }
 
-        if (changeInX + transform.position.x > 3.5f)// TODO - derive size of world
+        if (changeInX + transform.position.x > 4.45f)// TODO - derive size of world
         {
-            changeInX = 3.5f - transform.position.x;// TODO - derive size of world
+            changeInX = 4.45f - transform.position.x;// TODO - derive size of world
         }
 
         transform.position = new Vector3(
@@ -70,7 +76,11 @@ public class PaddleBehaviour : MonoBehaviour
 
             if(fire)
             {
-                m_bulletBehaviour.Launch();
+                float launchAngle = Random.Range(-Mathf.PI / 6, Mathf.PI / 6);// 30° either side of +Z
+                float forceX = Mathf.Sin(launchAngle);
+                float forceZ = Mathf.Cos(launchAngle);
+                m_bulletRigidbody.AddForce(new Vector3(forceX, 0, forceZ) * BulletLaunchForce);
+                m_bulletBehaviour.IsStuck = false;
             }
         }
     }
@@ -79,24 +89,22 @@ public class PaddleBehaviour : MonoBehaviour
     {
         if(collision.gameObject == Bullet && !m_bulletBehaviour.IsStuck)
         {
-            float velocityChangeInX = 0;
+            float forceInX = 0;
             float contactDistanceFromCentreX = collision.contacts[0].point.x - transform.position.x;
             if(contactDistanceFromCentreX > .1f)
             {
-                velocityChangeInX = 2.0f;
-                // TODO - some scaling
+                float skewRatio = (contactDistanceFromCentreX - .1f) / .4f;
+                forceInX = PaddleSkewMaxForce * skewRatio;
             }
             else if(contactDistanceFromCentreX < -.1f)
             {
-                velocityChangeInX = -2.0f;
-                // TODO - some scaling
+                float skewRatio = (-contactDistanceFromCentreX - .1f) / .4f;
+                forceInX = -PaddleSkewMaxForce * skewRatio;
             }
 
-            if (velocityChangeInX != 0)
+            if (forceInX != 0)
             {
-                float speed = collision.rigidbody.velocity.magnitude;
-                collision.rigidbody.velocity = collision.rigidbody.velocity + new Vector3(velocityChangeInX, 0, 0);
-                collision.rigidbody.velocity = collision.rigidbody.velocity * (speed / collision.rigidbody.velocity.magnitude);
+                collision.rigidbody.AddForce(new Vector3(forceInX, 0, 0));
             }
         }
     }
