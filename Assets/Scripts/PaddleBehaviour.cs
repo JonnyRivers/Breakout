@@ -23,20 +23,6 @@ public class PaddleBehaviour : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        bool ballIsLost = Bullet.transform.position.z < -5;// TODO - derive size of world
-
-        if(ballIsLost)
-        {
-            Bullet.transform.position = new Vector3(
-                transform.position.x,
-                transform.position.y,
-                transform.position.z + 0.1f// TODO - derive size of bat
-            );
-
-            m_bulletRigidbody.velocity = new Vector3(0, 0, 0);
-            m_bulletBehaviour.IsStuck = true;
-        }
-
         bool moveLeft = Input.GetKey(KeyCode.A);
         bool moveRight = Input.GetKey(KeyCode.D);
         bool fire = Input.GetKey(KeyCode.Space);
